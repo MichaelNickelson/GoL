@@ -1,0 +1,7 @@
+db/
+greybox_tmp
+output_files/
+*~
+*.qpf
+*.qsf
+*.bak
