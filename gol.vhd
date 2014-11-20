@@ -17,6 +17,8 @@ end entity;
 
 architecture rtl of gol is
   signal i_newFrame : std_logic;
+  signal i_dispAddr : std_logic_vector(15 DOWNTO 0);
+  signal i_updateAddr : std_logic_vector(10 DOWNTO 0);
 
   component clockDivider
     port(
