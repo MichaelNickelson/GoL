@@ -12,7 +12,8 @@ entity vgaController is
     reset_I     : in  std_logic;
     hSyncL_O    : out std_logic;
     vSyncL_O    : out std_logic;
-    vidEnable_O : out std_logic);
+    vidEnable_O : out std_logic;
+    newFrame_O  : out std_logic);
 end entity;
 
 architecture rtl of vgaController is
@@ -20,6 +21,7 @@ architecture rtl of vgaController is
   signal i_hVideoOn    : std_logic;
   signal i_vVideoOn    : std_logic;
   signal i_hCarry      : std_logic;
+  signal i_vCarry      : std_logic;
   signal i_hPulseL     : std_logic;
   signal i_vPulseL     : std_logic;
   signal i_vSyncEnable : std_logic; 
@@ -61,6 +63,8 @@ begin
 -- The actual video signal should only be on when both sync counters are in the
 -- active period.
   vidEnable_O <= i_hVideoOn AND i_vVideoOn;
+-- Alert the update module when a new frame is being displayed.
+  newFrame_O  <= i_vCarry AND i_vSyncEnable;
   
 -- Instantiate clockDivider to provide a 25MHz clock enable signal to both
 -- counters.
@@ -101,6 +105,7 @@ begin
       reset_I    => reset_I,
       enable_I   => i_vSyncEnable,
       videoOn_O  => i_vVideoOn,
+      carry_O    => i_vCarry,
       pulseL_O   => i_vPulseL,
       count_O    => i_vCount);
 end architecture rtl;
