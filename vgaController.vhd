@@ -8,12 +8,13 @@ USE IEEE.NUMERIC_STD.ALL;
 
 entity vgaController is
   port(
-    clk50_I     : in  std_logic;
-    reset_I     : in  std_logic;
-    hSyncL_O    : out std_logic;
-    vSyncL_O    : out std_logic;
-    vidEnable_O : out std_logic;
-    newFrame_O  : out std_logic);
+    clk50_I      : in  std_logic;
+    reset_I      : in  std_logic;
+    hSyncL_O     : out std_logic;
+    vSyncL_O     : out std_logic;
+    vidEnable_O  : out std_logic;
+    newFrame_O   : out std_logic;
+    memAddress_O : out std_logic_vector(15 DOWNTO 0));
 end entity;
 
 architecture rtl of vgaController is
@@ -57,6 +58,8 @@ begin
 -- Enable for the vSync counter is a combination of the 25MHz clock and the
 -- begining of the hSync pulse.
   i_vSyncEnable <= i_vgaClock AND i_hCarry;
+  
+  memAddress_O <= i_vCount(8 DOWNTO 1) & i_hCount(8 DOWNTO 1);
   
   hSyncL_O    <= i_hPulseL;
   vSyncL_O    <= i_vPulseL;

@@ -14,12 +14,11 @@ entity myVRAM is
     updateData_I     : IN  STD_LOGIC_VECTOR(31 DOWNTO 0);
     writeEnable_I    : IN  STD_LOGIC := '0';
     updateData_O     : OUT STD_LOGIC_VECTOR(31 DOWNTO 0);
-    pixel_O          : OUT STD_LOGIC
-  );
+    pixel_O          : OUT STD_LOGIC);
 end entity;
 
 architecture rtl of myVRAM is
-  signal displayLine : std_logic_vector(31 DOWNTO 0);
+  signal i_displayLine : std_logic_vector(31 DOWNTO 0);
 
   component golMemory
     port(
@@ -36,17 +35,18 @@ architecture rtl of myVRAM is
   end component;
 
 begin
-
   myRam : golMemory
     port map(
-      address_a <= updateAddress_I,
-      address_b <= displayAddress_I(15 DOWNTO 5),
-      clock     <= clk_I,
-      data_a    <= updateData_I,
-      data_b    <= displayLine,
-      wren_a    <= writeEnable_I,
-      wren_b    <= '0',
-      q_a       <= updateData_O,
-      q_b       <= i_displayLine
+      address_a => updateAddress_I,
+      address_b => displayAddress_I(15 DOWNTO 5),
+      clock     => clk_I,
+      data_a    => updateData_I,
+      data_b    => x"00000000",
+      wren_a    => writeEnable_I,
+      wren_b    => '0',
+      q_a       => updateData_O,
+      q_b       => i_displayLine
     );
+
+  pixel_O <= i_displayLine(31 - to_integer(unsigned(displayAddress_I(4 DOWNTO 0))));
 end architecture rtl;
