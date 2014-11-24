@@ -25,13 +25,6 @@ architecture rtl of gol is
   signal i_dataToUpdate : std_logic_vector(31 DOWNTO 0);
   signal i_updateEnable : std_logic;
 
-  component clockDivider
-    port(
-      clk50_I : in  std_logic;
-      reset_I : in  std_logic;
-      clk25_O : out std_logic);
-  end component;
-
   component vgaController
     port(
       clk50_I      : in  std_logic;

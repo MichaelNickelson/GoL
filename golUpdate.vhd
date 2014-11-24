@@ -34,10 +34,10 @@ begin
   process(clk_I, reset_I)
   begin
     if reset_I = '1' then
-      i_curState    <= idle_st;
-      i_frameCount  <= (OTHERS => '0');
       writeEnable_O <= '0';
       newData_O     <= (OTHERS => '0');
+      i_curState    <= idle_st;
+      i_frameCount  <= (OTHERS => '0');
       i_address     <= (OTHERS => '0');
       i_lastLine    <= (OTHERS => '0');
       i_thisLine    <= (OTHERS => '0');
