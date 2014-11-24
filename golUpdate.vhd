@@ -48,7 +48,7 @@ begin
       case i_curState is
         when idle_st =>
           if i_loadedData < 7 then
-            i_address    <= std_logic_vector(i_loadedData);
+            i_address    <= std_logic_vector(to_unsigned(i_loadedData, 11));
             i_thisLine   <= (OTHERS => '0');
             i_nextLine   <= i_nextLine(223 DOWNTO 0) & oldData_I;
             i_loadedData <= i_loadedData + 1;
