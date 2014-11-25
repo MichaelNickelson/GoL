@@ -24,14 +24,16 @@ architecture rtl of golUpdate is
 
   signal i_loadedData : std_logic_vector(3 DOWNTO 0);
 
-  signal i_frameCount : std_logic_vector(4 DOWNTO 0);
-  signal i_lastLine   : std_logic_vector(255 DOWNTO 0);
-  signal i_thisLine   : std_logic_vector(255 DOWNTO 0);
-  signal i_nextLine   : std_logic_vector(255 DOWNTO 0);
-  signal i_baseAddress    : std_logic_vector(10 DOWNTO 0);
-  signal i_address    : std_logic_vector(10 DOWNTO 0);
+  signal i_frameCount  : std_logic_vector(4 DOWNTO 0);
+  signal i_lastLine    : std_logic_vector(255 DOWNTO 0);
+  signal i_thisLine    : std_logic_vector(255 DOWNTO 0);
+  signal i_nextLine    : std_logic_vector(255 DOWNTO 0);
+  signal i_baseAddress : std_logic_vector(10 DOWNTO 0);
+  signal i_nextAddress : std_logic_vector(10 DOWNTO 0);
 
 begin
+  i_nextAddress <= i_baseAddress + x"08";
+
   process(clk_I, reset_I)
   begin
     if reset_I = '1' then
@@ -40,7 +42,7 @@ begin
       i_curState    <= idle_st;
       i_frameCount  <= (OTHERS => '0');
       i_baseAddress <= (OTHERS => '0');
-      i_address     <= (OTHERS => '0');
+      i_nextAddress <= (OTHERS => '0');
       i_lastLine    <= (OTHERS => '0');
       i_thisLine    <= (OTHERS => '0');
       i_nextLine    <= (OTHERS => '0');
@@ -57,31 +59,32 @@ begin
             i_frameCount <= (OTHERS => '0');
             i_loadedData <= (OTHERS => '0');
           end if;
-        
+
         when firstLoad_st =>
-            i_address    <= i_baseAddress + i_loadedData;
-            i_thisLine   <= (OTHERS => '0');
-            i_nextLine   <= i_nextLine(223 DOWNTO 0) & oldData_I;
-            i_loadedData <= i_loadedData + '1';
+          address_O    <= i_baseAddress + i_loadedData;
+          i_thisLine   <= (OTHERS => '0');
+          i_nextLine   <= i_nextLine(223 DOWNTO 0) & oldData_I;
+          i_loadedData <= i_loadedData + '1';
+
           if i_loadedData >= x"09" then
-            i_nextState <= load_st;
-            i_loadedData <= i_loadedData - 1;
+            i_nextState  <= load_st;
+            i_loadedData <= (OTHERS => '0');
             i_lastLine   <= i_thisLine;
             i_thisLine   <= i_nextLine;
           end if;
-        
+
         when load_st =>
-          if i_loadedData /= x"00" then
-            i_address    <= i_baseAddress + i_loadedData;
-            i_nextLine   <= i_nextLine(223 DOWNTO 0) & oldData_I;
-            i_loadedData <= i_loadedData + '1';
-          else
-            i_nextState <= update_st;
+          address_O    <= i_nextAddress + i_loadedData;
+          i_nextLine   <= i_nextLine(223 DOWNTO 0) & oldData_I;
+          i_loadedData <= i_loadedData + '1';
+          if i_loadedData >= x"09" then
+            i_nextState  <= update_st;
+            i_loadedData <= (OTHERS => '0');
           end if;
+
         when update_st =>
           i_thisLine <= i_thisLine;
       end case;
-      address_O <= i_baseAddress + i_loadedData;
       i_curState <= i_nextState;
     end if;
   end process;
