@@ -17,17 +17,18 @@ entity golUpdate is
 end entity;
 
 architecture rtl of golUpdate is
-  TYPE State_t IS (idle_st, load_st, update_st);
+  TYPE State_t IS (idle_st, firstLoad_st, load_st, update_st);
 
   signal i_curState  : State_t;
   signal i_nextState : State_t;
 
-  signal i_loadedData : integer;
+  signal i_loadedData : std_logic_vector(3 DOWNTO 0);
 
   signal i_frameCount : std_logic_vector(4 DOWNTO 0);
   signal i_lastLine   : std_logic_vector(255 DOWNTO 0);
   signal i_thisLine   : std_logic_vector(255 DOWNTO 0);
   signal i_nextLine   : std_logic_vector(255 DOWNTO 0);
+  signal i_baseAddress    : std_logic_vector(10 DOWNTO 0);
   signal i_address    : std_logic_vector(10 DOWNTO 0);
 
 begin
@@ -38,36 +39,51 @@ begin
       newData_O     <= (OTHERS => '0');
       i_curState    <= idle_st;
       i_frameCount  <= (OTHERS => '0');
+      i_baseAddress <= (OTHERS => '0');
       i_address     <= (OTHERS => '0');
       i_lastLine    <= (OTHERS => '0');
       i_thisLine    <= (OTHERS => '0');
       i_nextLine    <= (OTHERS => '0');
-      i_loadedData  <= 0;
+      i_loadedData  <= (OTHERS => '0');
 
     elsif rising_edge(clk_I) then
       case i_curState is
         when idle_st =>
-          if i_loadedData < 7 then
-            i_address    <= std_logic_vector(to_unsigned(i_loadedData, 11));
-            i_thisLine   <= (OTHERS => '0');
-            i_nextLine   <= i_nextLine(223 DOWNTO 0) & oldData_I;
-            i_loadedData <= i_loadedData + 1;
-          end if;
           if newFrame_I = '1' then
             i_frameCount <= (i_frameCount + '1');
           end if;
           if i_frameCount > staticFrames then
-            i_nextState  <= load_st;
-            i_loadedData <= 0;
+            i_nextState  <= firstLoad_st;
+            i_frameCount <= (OTHERS => '0');
+            i_loadedData <= (OTHERS => '0');
+          end if;
+        
+        when firstLoad_st =>
+          if i_loadedData < x"09" then
+            i_address    <= i_baseAddress + i_loadedData;
+            i_thisLine   <= (OTHERS => '0');
+            i_nextLine   <= i_nextLine(223 DOWNTO 0) & oldData_I;
+            i_loadedData <= i_loadedData + '1';
+          else
+            i_nextState <= load_st;
+            i_loadedData <= i_loadedData - 1;
             i_lastLine   <= i_thisLine;
             i_thisLine   <= i_nextLine;
           end if;
+        
         when load_st =>
-          i_address <= i_address + "00000000001";
+          if i_loadedData /= x"00" then
+            i_address    <= i_baseAddress + i_loadedData;
+            i_nextLine   <= i_nextLine(223 DOWNTO 0) & oldData_I;
+            i_loadedData <= i_loadedData + '1';
+          else
+            i_nextState <= update_st;
+          end if;
         when update_st =>
-          i_thisLine <= (OTHERS => '0');
+          i_thisLine <= i_thisLine;
       end case;
+      address_O <= i_baseAddress + i_loadedData;
     end if;
-    address_O <= i_address;
+    i_curState <= i_nextState;
   end process;
 end rtl;

@@ -84,7 +84,7 @@ port map(
     
 updater: golUpdate
   generic map(
-    staticFrames => std_logic_vector(to_unsigned(5, 5)))
+    staticFrames => std_logic_vector(to_unsigned(2, 5)))
   port map(
     clk_I         => clk_I,
     reset_I       => reset_I,
