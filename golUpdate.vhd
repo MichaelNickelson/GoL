@@ -59,12 +59,11 @@ begin
           end if;
         
         when firstLoad_st =>
-          if i_loadedData < x"09" then
             i_address    <= i_baseAddress + i_loadedData;
             i_thisLine   <= (OTHERS => '0');
             i_nextLine   <= i_nextLine(223 DOWNTO 0) & oldData_I;
             i_loadedData <= i_loadedData + '1';
-          else
+          if i_loadedData >= x"09" then
             i_nextState <= load_st;
             i_loadedData <= i_loadedData - 1;
             i_lastLine   <= i_thisLine;
@@ -83,7 +82,7 @@ begin
           i_thisLine <= i_thisLine;
       end case;
       address_O <= i_baseAddress + i_loadedData;
+      i_curState <= i_nextState;
     end if;
-    i_curState <= i_nextState;
   end process;
 end rtl;
