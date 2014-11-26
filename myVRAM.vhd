@@ -48,5 +48,5 @@ begin
       q_b       => i_displayLine
     );
 
-  pixel_O <= i_displayLine(31 - to_integer(unsigned(displayAddress_I(4 DOWNTO 0))));
+  pixel_O <= i_displayLine(to_integer(unsigned(displayAddress_I(4 DOWNTO 0))));
 end architecture rtl;
