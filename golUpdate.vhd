@@ -1,7 +1,8 @@
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.STD_LOGIC_UNSIGNED.ALL;
-USE IEEE.NUMERIC_STD.ALL;
+--USE IEEE.STD_LOGIC_ARITH.ALL;
+-- USE IEEE.NUMERIC_STD.ALL;
 
 entity golUpdate is
   generic(
@@ -17,36 +18,56 @@ entity golUpdate is
 end entity;
 
 architecture rtl of golUpdate is
-  TYPE State_t IS (idle_st, firstLoad_st, load_st, update_st);
+  TYPE State_t IS (idle_st, firstLoad_st, switch_st, load_st, calc_st, update_st);
 
   signal i_curState  : State_t;
   signal i_nextState : State_t;
 
-  signal i_loadedData : std_logic_vector(3 DOWNTO 0);
+  signal i_loadedData : std_logic_vector(10 DOWNTO 0);
 
-  signal i_frameCount  : std_logic_vector(4 DOWNTO 0);
-  signal i_lastLine    : std_logic_vector(255 DOWNTO 0);
-  signal i_thisLine    : std_logic_vector(255 DOWNTO 0);
-  signal i_nextLine    : std_logic_vector(255 DOWNTO 0);
-  signal i_baseAddress : std_logic_vector(10 DOWNTO 0);
-  signal i_nextAddress : std_logic_vector(10 DOWNTO 0);
+  signal i_frameCount    : std_logic_vector(4 DOWNTO 0);
+  signal i_lastLine      : std_logic_vector(255 DOWNTO 0);
+  signal i_thisLine      : std_logic_vector(255 DOWNTO 0);
+  signal i_nextLine      : std_logic_vector(255 DOWNTO 0);
+  signal i_updatedLine   : std_logic_vector(255 DOWNTO 0);
+  signal i_baseAddress   : std_logic_vector(10 DOWNTO 0);
+  signal i_nextAddress   : std_logic_vector(10 DOWNTO 0);
+  signal i_updatedPixels : integer range 0 to 255;
+  signal i_neighbors     : std_logic_vector(3 DOWNTO 0);
 
 begin
-  i_nextAddress <= i_baseAddress + x"08";
+  i_nextAddress <= i_baseAddress + 8;
+  
+  i_neighbors <= ("000" & i_lastLine(i_updatedPixels - 1)) +
+                 ("000" & i_lastLine(i_updatedPixels))     +
+                 ("000" & i_lastLine(i_updatedPixels + 1)) +
+                 ("000" & i_thisLine(i_updatedPixels - 1)) +
+                 ("000" & i_thisLine(i_updatedPixels + 1)) +
+                 ("000" & i_nextLine(i_updatedPixels - 1)) +
+                 ("000" & i_nextLine(i_updatedPixels))     +
+                 ("000" & i_nextLine(i_updatedPixels + 1))
+                 when (i_updatedPixels > 0) else
+                 ("000" & i_lastLine(i_updatedPixels))     +
+                 ("000" & i_lastLine(i_updatedPixels + 1)) +
+                 ("000" & i_thisLine(i_updatedPixels + 1)) +
+                 ("000" & i_nextLine(i_updatedPixels))     +
+                 ("000" & i_nextLine(i_updatedPixels + 1));
 
   process(clk_I, reset_I)
   begin
     if reset_I = '1' then
-      writeEnable_O <= '0';
-      newData_O     <= (OTHERS => '0');
       i_curState    <= idle_st;
+      writeEnable_O <= '0';
+      address_O     <= (OTHERS => '0');
+      newData_O     <= (OTHERS => '0');
       i_frameCount  <= (OTHERS => '0');
       i_baseAddress <= (OTHERS => '0');
-      i_nextAddress <= (OTHERS => '0');
       i_lastLine    <= (OTHERS => '0');
       i_thisLine    <= (OTHERS => '0');
       i_nextLine    <= (OTHERS => '0');
       i_loadedData  <= (OTHERS => '0');
+      i_updatedLine <= (OTHERS => '0');
+      i_updatedPixels <= 0;
 
     elsif rising_edge(clk_I) then
       case i_curState is
@@ -56,34 +77,54 @@ begin
           end if;
           if i_frameCount > staticFrames then
             i_nextState  <= firstLoad_st;
+            i_thisLine   <= (OTHERS => '0');
             i_frameCount <= (OTHERS => '0');
             i_loadedData <= (OTHERS => '0');
+            i_updatedPixels <= 0;
           end if;
 
         when firstLoad_st =>
-          address_O    <= i_baseAddress + i_loadedData;
-          i_thisLine   <= (OTHERS => '0');
-          i_nextLine   <= i_nextLine(223 DOWNTO 0) & oldData_I;
-          i_loadedData <= i_loadedData + '1';
-
-          if i_loadedData >= x"09" then
-            i_nextState  <= load_st;
-            i_loadedData <= (OTHERS => '0');
-            i_lastLine   <= i_thisLine;
-            i_thisLine   <= i_nextLine;
+          if i_loadedData <= 9 then
+            address_O    <= i_baseAddress + i_loadedData;
+            --i_nextLine   <= i_nextLine(223 DOWNTO 0) & oldData_I;
+            i_nextLine   <= oldData_I & i_nextLine(255 DOWNTO 32);
+            i_loadedData <= i_loadedData + '1';
+          else
+            i_nextState  <= switch_st;
           end if;
+          
+        when switch_st =>
+          i_loadedData <= (OTHERS => '0');
+          i_thisLine <= i_nextLine;
+          i_nextState <= load_st;
 
         when load_st =>
-          address_O    <= i_nextAddress + i_loadedData;
-          i_nextLine   <= i_nextLine(223 DOWNTO 0) & oldData_I;
-          i_loadedData <= i_loadedData + '1';
-          if i_loadedData >= x"09" then
-            i_nextState  <= update_st;
-            i_loadedData <= (OTHERS => '0');
+          if i_loadedData <= 9 then
+            address_O    <= i_nextAddress + i_loadedData;
+            --i_nextLine   <= i_nextLine(223 DOWNTO 0) & oldData_I;
+            i_nextLine   <= oldData_I & i_nextLine(255 DOWNTO 32);
+            i_loadedData <= i_loadedData + '1';
+          else
+            i_updatedPixels <= 0;
+            i_nextState  <= calc_st;
           end if;
 
+        when calc_st =>
+          if(i_updatedPixels = 240) then
+            i_nextState <= update_st;
+          else
+            i_updatedPixels <= i_updatedPixels + 1;
+            if(i_neighbors = 2) then
+               i_updatedLine(i_updatedPixels) <= i_thisLine(i_updatedPixels);
+            elsif(i_neighbors = 3) then
+               i_updatedLine(i_updatedPixels) <= '1';
+            else
+               i_updatedLine(i_updatedPixels) <= '0';
+            end if;
+          end if;
+        
         when update_st =>
-          i_thisLine <= i_thisLine;
+           i_updatedLine <= i_updatedLine;
       end case;
       i_curState <= i_nextState;
     end if;
