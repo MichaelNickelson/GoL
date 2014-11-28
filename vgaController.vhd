@@ -31,7 +31,7 @@ architecture rtl of vgaController is
 
   component clockDivider
     port(
-      clk_I   : in  std_logic;
+      clk50_I   : in  std_logic;
       reset_I : in  std_logic;
       clk25_O : out std_logic);
   end component;
@@ -73,7 +73,7 @@ begin
   -- counters.
   vgaClock : clockDivider
     port map(
-      clk_I   => clk_I,
+      clk50_I   => clk_I,
       reset_I => reset_I,
       clk25_O => i_vgaClock);
 

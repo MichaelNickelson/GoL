@@ -1,8 +1,6 @@
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.STD_LOGIC_UNSIGNED.ALL;
---USE IEEE.STD_LOGIC_ARITH.ALL;
--- USE IEEE.NUMERIC_STD.ALL;
 
 entity golUpdate is
   generic(
@@ -18,7 +16,7 @@ entity golUpdate is
 end entity;
 
 architecture rtl of golUpdate is
-  TYPE State_t IS (idle_st, firstLoad_st, switch_st, load_st, calc_st, update_st);
+  TYPE State_t IS (idle_st, firstLoad_st, switch_st, load_st, calc_st, update_st, switchIdle_st);
 
   signal i_curState  : State_t;
   signal i_nextState : State_t;
@@ -83,10 +81,11 @@ begin
     elsif rising_edge(clk_I) then
       case i_curState is
         when idle_st =>
+          address_O    <= i_baseAddress;
           if newFrame_I = '1' then
             i_frameCount <= (i_frameCount + '1');
           end if;
-          if i_frameCount > staticFrames then
+          if i_frameCount >= staticFrames then
             i_nextState     <= firstLoad_st;
             i_thisLine      <= (OTHERS => '0');
             i_frameCount    <= (OTHERS => '0');
@@ -106,6 +105,7 @@ begin
         when switch_st =>
           i_loadedData <= (OTHERS => '0');
           i_thisLine   <= i_nextLine;
+          address_O <= i_baseAddress + 8;
           i_nextState  <= load_st;
 
         when load_st =>
@@ -119,9 +119,7 @@ begin
           end if;
 
         when calc_st =>
-          if (i_updatedPixels = 240) then
-            i_nextState <= update_st;
-          else
+            i_loadedData <= (OTHERS => '0');
             i_updatedPixels <= i_updatedPixels + 1;
             if (i_neighbors = 2) then
               i_updatedLine(i_updatedPixels) <= i_thisLine(i_updatedPixels);
@@ -130,10 +128,31 @@ begin
             else
               i_updatedLine(i_updatedPixels) <= '0';
             end if;
+         if (i_updatedPixels >= 238) then
+            i_nextState <= update_st;
           end if;
 
         when update_st =>
-          i_updatedLine <= i_updatedLine;
+          if i_baseAddress > 1912 then
+            i_nextState <= switchIdle_st;
+          elsif i_loadedData < 9 then
+            writeEnable_O <= '1';
+            newData_O     <= i_updatedLine(31 DOWNTO 0);
+            i_updatedLine   <= x"00000000" & i_updatedLine(255 DOWNTO 32);
+            address_O     <= i_baseAddress + i_loadedData;
+            i_loadedData <= i_loadedData + '1';
+          else
+            i_nextState <= switch_st;
+            i_baseAddress <= i_baseAddress + 8;
+            writeEnable_O <= '0';
+            i_loadedData <= (OTHERS => '0');
+          end if;
+          
+       when switchIdle_st =>
+            i_nextState <= idle_st;
+            i_baseAddress <= (OTHERS => '0');
+            writeEnable_O <= '0';
+
       end case;
       i_curState <= i_nextState;
     end if;
