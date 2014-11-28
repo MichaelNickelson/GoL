@@ -16,7 +16,7 @@ entity golUpdate is
 end entity;
 
 architecture rtl of golUpdate is
-  TYPE State_t IS (idle_st, firstLoad_st, switch_st, load_st, calc_st, update_st, switchIdle_st);
+  TYPE State_t IS (idle_st, firstLoad_st, switch_st, load_st, calc_st, update_st, updateToLoad_st, switchIdle_st);
 
   signal i_curState  : State_t;
   signal i_nextState : State_t;
@@ -104,8 +104,12 @@ begin
 
         when switch_st =>
           i_loadedData <= (OTHERS => '0');
-          i_thisLine   <= i_nextLine;
+          writeEnable_O <= '0';
           address_O <= i_baseAddress + 8;
+          if i_nextState /= load_st then
+            i_thisLine   <= i_nextLine;
+            i_lastLine   <= i_thisLine;
+          end if;
           i_nextState  <= load_st;
 
         when load_st =>
@@ -135,18 +139,22 @@ begin
         when update_st =>
           if i_baseAddress > 1912 then
             i_nextState <= switchIdle_st;
-          elsif i_loadedData < 9 then
+          elsif i_loadedData >= 9 then
+            i_nextState <= updateToLoad_st;
+            writeEnable_O <= '0';
+          else
             writeEnable_O <= '1';
             newData_O     <= i_updatedLine(31 DOWNTO 0);
             i_updatedLine   <= x"00000000" & i_updatedLine(255 DOWNTO 32);
             address_O     <= i_baseAddress + i_loadedData;
             i_loadedData <= i_loadedData + '1';
-          else
-            i_nextState <= switch_st;
-            i_baseAddress <= i_baseAddress + 8;
-            writeEnable_O <= '0';
-            i_loadedData <= (OTHERS => '0');
           end if;
+          
+       when updateToLoad_st =>
+         i_nextState <= switch_st;
+         if i_nextState /= switch_st then
+            i_baseAddress <= i_baseAddress + 8;
+         end if;
           
        when switchIdle_st =>
             i_nextState <= idle_st;
