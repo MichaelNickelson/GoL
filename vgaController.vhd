@@ -28,6 +28,11 @@ architecture rtl of vgaController is
   signal i_vSyncEnable : std_logic;
   signal i_hCount      : std_logic_vector(9 DOWNTO 0);
   signal i_vCount      : std_logic_vector(9 DOWNTO 0);
+  
+  signal  i_delayHSyncL : std_logic_vector(1 DOWNTO 0);
+  signal i_delayVSyncL : std_logic_vector(1 DOWNTO 0);
+  signal i_delayVidEnable : std_logic_vector(1 DOWNTO 0);
+  signal i_delayNewFrame : std_logic_vector(1 DOWNTO 0);
 
   component clockDivider
     port(
@@ -61,13 +66,17 @@ begin
 
   memAddress_O <= i_vCount(8 DOWNTO 1) & i_hCount(8 DOWNTO 1);
 
-  hSyncL_O    <= i_hPulseL;
-  vSyncL_O    <= i_vPulseL;
+  --hSyncL_O    <= i_hPulseL;
+  --vSyncL_O    <= i_vPulseL;
   -- The actual video signal should only be on when both sync counters are in the
   -- active period.
-  vidEnable_O <= i_hVideoOn AND i_vVideoOn;
+  --vidEnable_O <= i_hVideoOn AND i_vVideoOn;
   -- Alert the update module when a new frame is being displayed.
-  newFrame_O  <= i_vCarry AND i_vSyncEnable;
+  --newFrame_O  <= i_vCarry AND i_vSyncEnable;
+  hSyncL_O <= i_delayHSyncL(1);
+  vSyncL_O <= i_delayVSyncL(1);
+  vidEnable_O <= i_delayVidEnable(1);
+  newFrame_O <= i_delayNewFrame(1);
 
   -- Instantiate clockDivider to provide a 25MHz clock enable signal to both
   -- counters.
@@ -111,4 +120,25 @@ begin
       carry_O   => i_vCarry,
       pulseL_O  => i_vPulseL,
       count_O   => i_vCount);
+      
+process(clk_I,reset_I)
+begin
+   if(reset_I='1') then
+      i_delayHSyncL <= (others=>'0');
+      i_delayVSyncL<= (others=>'0');
+      i_delayVidEnable <= (others=>'0');
+      i_delayNewFrame <= (others=>'0');
+   elsif(rising_edge(clk_I)) then
+      --bit shift register
+      i_delayHSyncL(1) <= i_delayHSyncL(0);
+      i_delayVSyncL(1) <= i_delayVSyncL(0);
+      i_delayVidEnable(1) <= i_delayVidEnable(0);
+      i_delayNewFrame(1) <= i_delayNewFrame(0);
+      
+      i_delayHSyncL(0) <= i_hPulseL;
+      i_delayVSyncL(0) <= i_vPulseL;
+      i_delayVidEnable(0) <= i_hVideoOn AND i_vVideoOn;
+      i_delayNewFrame(0) <= i_vCarry AND i_vSyncEnable;
+   end if;
+end process;
 end architecture rtl;

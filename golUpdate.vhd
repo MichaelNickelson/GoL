@@ -151,8 +151,12 @@ begin
           end if;
           
        when updateToLoad_st =>
-         i_nextState <= switch_st;
-         if i_nextState /= switch_st then
+         if i_baseAddress > 1912 then
+            i_nextState <= switchIdle_st;
+         else
+            i_nextState <= switch_st;
+         end if;
+         if (i_nextState /= switch_st) and (i_nextState /= switchIdle_st) then
             i_baseAddress <= i_baseAddress + 8;
          end if;
           

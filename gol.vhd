@@ -39,6 +39,7 @@ architecture rtl of gol is
   component myVRAM
     PORT(
       clk_I            : IN  STD_LOGIC := '1';
+      reset_I          : IN  STD_LOGIC;
       updateAddress_I  : IN  STD_LOGIC_VECTOR(10 DOWNTO 0);
       displayAddress_I : IN  STD_LOGIC_VECTOR(15 DOWNTO 0);
       updateData_I     : IN  STD_LOGIC_VECTOR(31 DOWNTO 0);
@@ -75,6 +76,7 @@ begin
   ram : myVRAM
     port map(
       clk_I            => clk_I,
+      reset_I          => reset_I,
       updateAddress_I  => i_updateAddr,
       displayAddress_I => i_dispAddr,
       updateData_I     => i_updatedData,
@@ -94,5 +96,5 @@ begin
       newData_O     => i_updatedData,
       address_O     => i_updateAddr);
 
-  pixel_O <= i_pixel AND i_videoEnable;
+pixel_O <= i_pixel AND i_videoEnable;
 end architecture rtl;
