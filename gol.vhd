@@ -3,8 +3,10 @@ USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.STD_LOGIC_UNSIGNED.ALL;
 USE IEEE.NUMERIC_STD.ALL;
 
--- This project provides a VGA controller based on a single counter instantiated
--- twice to provide hSync and vSync signals.
+-- This is the top-level module for Conway's Game of Life. This level primarily
+-- instantiates and ties together other modules.
+-- The only logical element in this piece is an and gate which ties together
+-- the pixel_O signal from VRAM and vidEnable_O from the VGA Controller.
 
 entity gol is
   port(

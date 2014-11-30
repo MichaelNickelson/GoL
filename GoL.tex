@@ -1,0 +1,132 @@
+\documentclass[twoside, letterpaper]{report}
+\usepackage{geometry}
+\usepackage{tabulary}
+\usepackage{titlesec}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{pdflscape}
+\usepackage{titling}
+\usepackage{indentfirst}
+\usepackage{graphicx}
+\usepackage{amsmath}
+
+\newcommand{\subtitle}[1]{%
+  \posttitle{%
+    \par\end{center}
+    \begin{center}\large#1\end{center}
+    \vskip0.5em}%
+}
+
+\setlength\aftertitleunit{\baselineskip}
+\titleformat{\chapter}[display]
+  {\normalfont\Huge \scshape}{}{-33pt}{\Huge}
+\titleformat{name=\chapter,numberless}[display]
+  {\normalfont\Huge \scshape}{}{-33pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{50pt}{*2}
+
+\lstdefinestyle{customvhd}{
+  belowcaptionskip=1\baselineskip,
+  breaklines=true,
+  xleftmargin=\parindent,
+  language=VHDL,
+  showstringspaces=false,
+  basicstyle=\footnotesize\ttfamily,
+  keywordstyle=\bfseries\color{green!40!black},
+  commentstyle=\itshape\color{purple!40!black},
+  identifierstyle=\color{blue},
+  stringstyle=\color{orange},
+}
+
+\makeatletter
+ \def\@textbottom{\vskip \z@ \@plus 1pt}
+ \let\@texttop\relax
+\makeatother
+
+\author{Michael Nickelson}
+\title{Final Project}
+\subtitle{16.575 - FPGA Logic Design Techniques}
+\date{November 20, 2014}
+
+\begin{document}
+\maketitle
+\newpage\null\thispagestyle{empty}\newpage
+\pagenumbering{roman}
+\setcounter{page}{1}
+\tableofcontents
+\cleardoublepage
+
+\chapter{Summary}
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+-- The number of next state of each pixel is calculated based on the sum of its
+-- neighbors. For convenience each neighbor is given the value of a 4-bit array
+-- of "000" and the value of the neighbor in a given direction. If the
+-- line/pixel being considered is an edge piece the outside neighbors are set
+-- to "0000."
+
+This project implements a VGA controller for Conway's Game of Life by instantiating one counter with two sets of generics, one for hSync and one for vSync. The hSync enable is tied to a clock divider to generate a 25MHz VGA clock. The vSync enable is tied to the anding of hSync's carryout along with the 25MHz VGA clock. The video output is only enabled when both the horizontal and vertical scans are within the active region. hSync and vSync are offset in the count so that memory access can align with the 0-239 count.
+
+The counter has generics to cover each section of the sync pulse timing and a "display off" period to ensure the game board in this case is square.
+
+A simple clock divider is used as an enable to hSync and is anded with the beginning of the hSync pulse to generate the vSync enable.
+
+The vgaController testbench supplies a reset signal to start restart the counters. After that there is no input supplied to the vgaController.
+
+\newgeometry{margin=0.5in}
+\chapter{vgaController}
+\lstinputlisting[style=customvhd, language=VHDL] {./vgaController.vhd}
+
+\chapter{counter}
+\lstinputlisting[style=customvhd, language=VHDL] {./counter.vhd}
+
+\chapter{clockDivider}
+\lstinputlisting[style=customvhd, language=VHDL] {./clockDivider.vhd}
+
+\chapter{t\_vgaController}
+\lstinputlisting[style=customvhd, language=VHDL] {./t_vgaController.vhd}
+
+\chapter{Figures}
+\begin{figure}
+\centering
+\includegraphics[angle=90, height=9in]{./media/1_reset_active.png}
+\caption{While reset is high, the counters do not advance.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[angle=90, height=9in]{./media/2_hvideo_off.png}
+\caption{At the end of 480 cycles, the horizontal portion of the video out signal turns off.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[angle=90, height=9in]{./media/3_vsync_count.png}
+\caption{The vSync counter increments by 1 when the hSync pulse begins. The hSync and vSync pulses begin at $i\_count = i\_displayOn + blankSection + frontPorch$ and are active for pulseWidth cycles.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[angle=90, height=9in]{./media/4_hsync_end.png}
+\caption{The hSync pulse is active for 96 clock cycles.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[angle=90, height=9in]{./media/5_hsync_loop}
+\caption{The hSync counter cycles after 800 counts.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[angle=90, height=9in]{./media/6_vvideo_off}
+\caption{At the end of 480 cycles, the vertical portion of the video out signal turns off.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[angle=90, height=9in]{./media/7_vsync}
+\caption{The vSync pulse is active for two hSync cycles.}
+\end{figure}
+
+\end{document}

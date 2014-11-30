@@ -3,8 +3,9 @@ USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.STD_LOGIC_UNSIGNED.ALL;
 USE IEEE.NUMERIC_STD.ALL;
 
--- 
--- 
+-- This module instantiates a block of RAM from the Altera superfunction
+-- library. It then feeds individual pixels back to the top-level module as
+-- needed based on the hSync and vSync counter values.
 
 entity myVRAM is
   PORT(
@@ -22,7 +23,6 @@ architecture rtl of myVRAM is
   type PixelDelay_t is array (0 to 1) of std_logic_vector(4 downto 0);
   signal i_displayLine : std_logic_vector(31 DOWNTO 0);
   signal i_myAddress : std_logic_vector(10 DOWNTO 0);
-  signal i_myPixel : std_logic_vector(4 DOWNTO 0);
   signal i_pixelDelay : PixelDelay_t;
 
   component golMemory
@@ -56,8 +56,11 @@ begin
 
    i_myAddress <= displayAddress_I(15 DOWNTO 5);
    
+-- displayAddress_I is delayed before being fed to pixel_O to allow a cycle for
+-- RAM access.
    pixel_O <= i_displayLine(to_integer(unsigned(i_pixelDelay(1))));
    
+--Again, the delay is implemented as a simple inline shift register.
 process(clk_I,reset_I)
 begin
    if(reset_I='1') then

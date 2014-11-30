@@ -66,16 +66,14 @@ begin
 
   memAddress_O <= i_vCount(8 DOWNTO 1) & i_hCount(8 DOWNTO 1);
 
-  --hSyncL_O    <= i_hPulseL;
-  --vSyncL_O    <= i_vPulseL;
-  -- The actual video signal should only be on when both sync counters are in the
-  -- active period.
-  --vidEnable_O <= i_hVideoOn AND i_vVideoOn;
-  -- Alert the update module when a new frame is being displayed.
-  --newFrame_O  <= i_vCarry AND i_vSyncEnable;
+-- The signals below are delayed so they will match output from the myVRAM
+-- module which needs to access RAM.
   hSyncL_O <= i_delayHSyncL(1);
   vSyncL_O <= i_delayVSyncL(1);
+-- The actual video signal should only be on when both sync counters are in the
+-- active period.
   vidEnable_O <= i_delayVidEnable(1);
+-- Alert the update module when a new frame is being displayed.
   newFrame_O <= i_delayNewFrame(1);
 
   -- Instantiate clockDivider to provide a 25MHz clock enable signal to both
@@ -121,6 +119,7 @@ begin
       pulseL_O  => i_vPulseL,
       count_O   => i_vCount);
       
+-- The delay is implemented as an inline shift register.
 process(clk_I,reset_I)
 begin
    if(reset_I='1') then
