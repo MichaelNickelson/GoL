@@ -1,14 +1,13 @@
 \documentclass[twoside, letterpaper]{report}
 \usepackage{geometry}
-\usepackage{tabulary}
 \usepackage{titlesec}
 \usepackage{listings}
 \usepackage{xcolor}
-\usepackage{pdflscape}
 \usepackage{titling}
 \usepackage{indentfirst}
 \usepackage{graphicx}
 \usepackage{amsmath}
+\usepackage{gensymb}
 
 \newcommand{\subtitle}[1]{%
   \posttitle{%
@@ -45,7 +44,7 @@
 \author{Michael Nickelson}
 \title{Final Project}
 \subtitle{16.575 - FPGA Logic Design Techniques}
-\date{November 20, 2014}
+\date{December 4, 2014}
 
 \begin{document}
 \maketitle
@@ -59,74 +58,113 @@
 \pagenumbering{arabic}
 \setcounter{page}{1}
 
--- The number of next state of each pixel is calculated based on the sum of its
--- neighbors. For convenience each neighbor is given the value of a 4-bit array
--- of "000" and the value of the neighbor in a given direction. If the
--- line/pixel being considered is an edge piece the outside neighbors are set
--- to "0000."
+This project implements Conway's Game of Life in VHDL. It is targeted for use on the Altera Cyclone IV as present in the DE-0 Nano development board.
 
-This project implements a VGA controller for Conway's Game of Life by instantiating one counter with two sets of generics, one for hSync and one for vSync. The hSync enable is tied to a clock divider to generate a 25MHz VGA clock. The vSync enable is tied to the anding of hSync's carryout along with the 25MHz VGA clock. The video output is only enabled when both the horizontal and vertical scans are within the active region. hSync and vSync are offset in the count so that memory access can align with the 0-239 count.
+The implementation includes a top-level Game of Life module which implements a block of VRAM, a VGA Controller, and an update element. Within the VRAM there is a block RAM pulled from the Altera superfunction library. Inside the VGA Controller are two parameterized counters to produce hSync and vSync, and a clock divider to provide a 25MHz enable signal to the counters. The block diagram of this setup can be seen in Figure~\ref{fig:block}.
+\newline
+\par
+The VGA controller used is the same as what was developed for HW5 with the only change being delay of hSyncL\_O, vSyncL\_O, vidEnable\_O, and newFrame\_O to work with the RAM block.
+\newline
+\par
+The memory block itself is imported from Altera's mega function library so the source is not included. The parameters used for generation are a 32bit by 2048 line, unregistered, two port RAM.
 
-The counter has generics to cover each section of the sync pulse timing and a "display off" period to ensure the game board in this case is square.
+The memory is initialized using an mif file. In this instance the stored data is a single blinker. I have chosen this shape as it is easy to verify using waveforms and it demonstrates all of the possible cellular activities (survival, death, and birth).
+\newline
+\par
+The update logic is implemented as a state machine (Figure~\ref{fig:state}) which waits in an idle state until the current configuration has been displayed a set number of times. This value is set up as a generic which is passed at instantiation and can allow up to 1s between updates.
+There is room for improvement in the implementation of the state machine, particularly the transition from updating back to the idle state. However, given the time constraints of this project the focus was on functionality.
 
-A simple clock divider is used as an enable to hSync and is anded with the beginning of the hSync pulse to generate the vSync enable.
+To calculate the next step, golUpdate.vhd uses four 256-bit registers. One each to represent the current states of the last, current, and next lines to be calculated and the next state of the current line. Once these registers are loaded the next state of each bit in the current line is calculated based on the state of its 8 neighbors. This value is saved back to the updatedLine register. This register is then loaded back into RAM in the addresses of the original line. Once the last line is updated the system returns to the idle state.
+\newline
+\par
+The testbench generates a clock and sends reset to the system then allows the system to run with no further input.
+\newline
+\par
+There is a small amount of I/O so pin selection is not terribly complicated. The clock input is determined by the FPGA itself and is located at pin R8. For reset one of the available pushbuttons is used. It is located at pin J15. The outputs hSync, vSync, and pixel are chosen from pins available at the GPIO header. Pins A3, C3, and D3 have been chosen. These 3 are all available on bank 8.
 
-The vgaController testbench supplies a reset signal to start restart the counters. After that there is no input supplied to the vgaController.
+The intent was to select pins compatible with the Papilio VGA Wing available from Sparkfun Electronics (https://www.sparkfun.com/products/11569) however due to a mechanical incompatibility and the fact that I do not have a monitor to experiment with, this project has been tested in simulation only.
+\newline
+\par
+Figures~\ref{fig:blinker1} through~\ref{fig:blinker4} show a complete cycle of the blinker that is initialized in memory. It alternates between a 3x1 line segment and a 1x3 line segment and is situated in the top left corner of the screen for convenience.
+\newline
+\par
+The total chip utilization is shown below:
+\newline
+\par
+Family	Cyclone IV E
+
+Device	EP4CE22F17C6
+
+Total logic elements	1,762 / 22,320 ( 8 \% )
+
+Total combinational functions	1,537 / 22,320 ( 7 \% )
+
+Dedicated logic registers	1,123 / 22,320 ( 5 \% )
+
+Total registers	1123
+
+Total pins	5 / 154 ( 3 \% )
+
+Total memory bits	65,536 / 608,256 ( 11 \% )
+\newline
+\par
+At 85\degree~C the maximum clock speed is 112MHz so timing is not a concern for this project.
 
 \newgeometry{margin=0.5in}
-\chapter{vgaController}
+\chapter{Top-Level Module}
+\lstinputlisting[style=customvhd, language=VHDL] {./gol.vhd}
+
+\chapter{VGA Controller}
 \lstinputlisting[style=customvhd, language=VHDL] {./vgaController.vhd}
 
-\chapter{counter}
-\lstinputlisting[style=customvhd, language=VHDL] {./counter.vhd}
+\chapter{RAM}
+\lstinputlisting[style=customvhd, language=VHDL] {./myVRAM.vhd}
 
-\chapter{clockDivider}
-\lstinputlisting[style=customvhd, language=VHDL] {./clockDivider.vhd}
+\chapter{RAM Initialization}
+\lstinputlisting {./golMemory.mif}
 
-\chapter{t\_vgaController}
-\lstinputlisting[style=customvhd, language=VHDL] {./t_vgaController.vhd}
+\chapter{Update Logic}
+\lstinputlisting[style=customvhd, language=VHDL] {./golUpdate.vhd}
+
+\chapter{Testbench}
+\lstinputlisting[style=customvhd, language=VHDL] {./t_gol.vhd}
 
 \chapter{Figures}
 \begin{figure}
 \centering
-\includegraphics[angle=90, height=9in]{./media/1_reset_active.png}
-\caption{While reset is high, the counters do not advance.}
+\includegraphics[width=7in]{./media/golBlockDiagram.eps}
+\caption{\label{fig:block}Block diagram of Game of Life project.}
 \end{figure}
 
 \begin{figure}
 \centering
-\includegraphics[angle=90, height=9in]{./media/2_hvideo_off.png}
-\caption{At the end of 480 cycles, the horizontal portion of the video out signal turns off.}
+\includegraphics[width=7in]{./media/stateDiagram.eps}
+\caption{\label{fig:state}State machine used to update the play field.}
 \end{figure}
 
 \begin{figure}
 \centering
-\includegraphics[angle=90, height=9in]{./media/3_vsync_count.png}
-\caption{The vSync counter increments by 1 when the hSync pulse begins. The hSync and vSync pulses begin at $i\_count = i\_displayOn + blankSection + frontPorch$ and are active for pulseWidth cycles.}
+\includegraphics[angle=90, height=9in]{./media/blinker_1.jpg}
+\caption{\label{fig:blinker1}Memory is initialized as a 3x1 blinker in row 1, columns 0-2. This figure shows the initial memory block being displayed. HSync is offset by one for RAM access, VSync is at 2 because each pixel is shown twice.}
 \end{figure}
 
 \begin{figure}
 \centering
-\includegraphics[angle=90, height=9in]{./media/4_hsync_end.png}
-\caption{The hSync pulse is active for 96 clock cycles.}
+\includegraphics[angle=90, height=9in]{./media/blinker_2.jpg}
+\caption{\label{fig:blinker2}This is a zoomed out view of the next figure. It shows the flipped blinker 3 blocks tall (6 pixels) and 1 block wide.}
 \end{figure}
 
 \begin{figure}
 \centering
-\includegraphics[angle=90, height=9in]{./media/5_hsync_loop}
-\caption{The hSync counter cycles after 800 counts.}
+\includegraphics[angle=90, height=9in]{./media/blinker_3.jpg}
+\caption{\label{fig:blinker3}Zoomed in view of Figure~\ref{fig:blinker2} showing that the pixel is on for 2 hCounts.}
 \end{figure}
 
 \begin{figure}
+\label{fig:blinker4}
 \centering
-\includegraphics[angle=90, height=9in]{./media/6_vvideo_off}
-\caption{At the end of 480 cycles, the vertical portion of the video out signal turns off.}
-\end{figure}
-
-\begin{figure}
-\centering
-\includegraphics[angle=90, height=9in]{./media/7_vsync}
-\caption{The vSync pulse is active for two hSync cycles.}
+\includegraphics[angle=90, height=9in]{./media/blinker_4.jpg}
+\caption{\label{fig:blinker4}The blinker has completed its cycle and displays the same configuration as Figure~\ref{fig:blinker1}.}
 \end{figure}
 
 \end{document}
