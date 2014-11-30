@@ -3,10 +3,15 @@ greybox_tmp/
 incremental_db/
 output_files/
 simulation/
+media/*.pdf
+/GameOfLife.out.sdc
 *~
+*.aux
+*.bak
 *.ddb
+*.log
 *.qpf
 *.qsf
-*.rpt
-*.bak
 *.qws
+*.rpt
+*.toc
