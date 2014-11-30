@@ -82,7 +82,7 @@ The testbench generates a clock and sends reset to the system then allows the sy
 \par
 There is a small amount of I/O so pin selection is not terribly complicated. The clock input is determined by the FPGA itself and is located at pin R8. For reset one of the available pushbuttons is used. It is located at pin J15. The outputs hSync, vSync, and pixel are chosen from pins available at the GPIO header. Pins A3, C3, and D3 have been chosen. These 3 are all available on bank 8.
 
-The intent was to select pins compatible with the Papilio VGA Wing available from Sparkfun Electronics (https://www.sparkfun.com/products/11569) however due to a mechanical incompatibility and the fact that I do not have a monitor to experiment with, this project has been tested in simulation only.
+The intent was to select pins compatible with the Papilio VGA Wing available from Sparkfun Electronics (https://www.sparkfun.com/products/11569) unfortunately due to a mechanical incompatibility and the fact that I do not have a monitor to experiment with, this project has been tested in simulation only.
 \newline
 \par
 Figures~\ref{fig:blinker1} through~\ref{fig:blinker4} show a complete cycle of the blinker that is initialized in memory. It alternates between a 3x1 line segment and a 1x3 line segment and is situated in the top left corner of the screen for convenience.
