@@ -1,0 +1,34 @@
+**************************************************************************************
+*   .----.                                                                           *
+*  | Idle |<------------------------------------------------------------.            *
+*   '-+--'                                                              |            *
+*     |frameCount>=staticFrames                                         |            *
+*     v                                                                 |            *
+* .---------.                                                           |            *
+*| firstLoad |                                                          |            *
+* '---+-----'                                                           |            *
+*     |loadedData>9                                                     |            *
+*     v                                                                 |            *
+*  .------.  baseAddress<=1912  .------------.  baseAddress>1912   .----+-----.      *
+* | switch |<------------------+ updateToLoad +------------------>| switchIdle |     *
+*  '--+---'                     '------------'                     '----+-----'      *
+*     |                               ^                                 ^            *
+*     v                               |                                 |            *
+*   .----.                            |loadedData>=9                    |            *
+*  | load |                           |baseAddress<=1912                |            *
+*   '-+--'                            |                                 |            *
+*     |loadedData>9                   |                                 |            *
+*     v                               |                    loadedData>=9|            *
+*   .----.  updatedPixels>238      .--+---.             baseAddress>1912|            *
+*  | calc +---------------------->| update +----------------------------'            *
+*   '----'                         '------'                                          *
+*                                                                                    *
+*                                                                                    *
+*                                                                                    *
+*                                                                                    *
+*                                                                                    *
+*                                                                                    *
+**************************************************************************************
+
+<!-- Markdeep: --><style class="fallback">body{white-space:pre;font-family:monospace}</style><script src="markdeep.min.js"></script><script src="http://casual-effects.com/markdeep/latest/markdeep.min.js"></script>
+Use http://www.hiqpdf.com/demo/ConvertHtmlToSvg.aspx to convert to svg.
