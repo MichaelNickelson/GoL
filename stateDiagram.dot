@@ -1,0 +1,33 @@
+digraph {
+	splines = ortho;
+	node[shape="rectangle", style="rounded"];
+
+  /*idle         [pos = "0,0!"];
+	firstLoad    [pos = "0,-2!"];
+	switch       [pos = "0,-4!"];
+	load         [pos = "0,-6!"];
+	calc         [pos = "0,-8!"];
+	update       [pos = "4,-8!"];
+	updateToLoad [pos = "4, -4!"];
+	switchIdle   [pos = "8, -4!"];*/
+
+  idle         [pos = "0,0!"];
+  firstLoad    [pos = "0,-1!"];
+  switch       [pos = "0,-2!"];
+  load         [pos = "0,-4!"];
+  calc         [pos = "4,-4!"];
+  update       [pos = "8,-2!"];
+  updateToLoad [pos = "4, -2!"];
+  switchIdle   [pos = "4, 0!"];
+
+	idle         -> firstLoad    [label = "frameCount >= staticFrames "];
+	firstLoad    -> switch       [label = "loadedData > 9 "];
+	switch       -> load         [label = ""];
+	load         -> calc         [label = "loadedData > 9 "];
+	calc         -> update       [label = "updatedPixels > 238"];
+	update       -> updateToLoad [label = "loadedData >= 9 \nbaseAddress <= 1912 "];
+	update       -> switchIdle   [label = "loadedData >= 9\nbaseAddress > 1912"];
+	updateToLoad -> switch       [label = "baseAddress <= 1912"];
+	updateToLoad -> switchIdle   [label = "baseAddress > 1912 "];
+	switchIdle   -> idle         [label = ""];
+}
